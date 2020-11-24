@@ -55,22 +55,142 @@ traversal_path = []
 
 known_rooms = {}
 
+opposite_direction = {
+    'n': 's',
+    's': 'n',
+    'e': 'w',
+    'w': 'e'
+}
+
+class Queue():
+    def __init__(self):
+        self.queue = []
+
+    def enqueue(self, value):
+        self.queue.append(value)
+
+    def dequeue(self):
+        if self.size() > 0:
+            return self.queue.pop(0)
+        else:
+            return None
+
+    def size(self):
+        return len(self.queue)
+
+
+class Stack():
+    def __init__(self):
+        self.stack = []
+
+    def push(self, value):
+        self.stack.append(value)
+
+    def pop(self):
+        if self.size() > 0:
+            return self.stack.pop()
+        else:
+            return None
+
+    def size(self):
+        return len(self.stack)
+
+# def bfs(self, starting_vertex, destination_vertex):
+#     q = Queue()
+#     visited = set()
+#     q.enqueue([starting_vertex])
+
+#     while q.size() > 0:
+#         current_path = q.dequeue()
+#         current_node = current_path[-1]
+#     ​
+#     if current_node == destination_vertex:
+#         return current_path
+#     ​
+#     if current_node not in visited:
+#         visited.add(current_node)
+
+#     neighbors = self.get_neighbors(current_node)
+#     for neighbor in neighbors:
+#         # path_copy = list(current_path)
+#         # path_copy = current_path.copy()
+#         # path_copy = copy.copy(current_path)
+#         # path_copy = current_path[:]
+#     ​
+#     # path_copy.append(neighbor)
+#     path_copy = current_path + [neighbor]
+
+
+def has_unknown_rooms(room):
+    unknown_directions = [i for i in known_rooms[room.id]
+                          if known_rooms[room.id][i] == '?']
+    return unknown_directions
+
+# Start by building out the graph for the first item
+known_rooms[player.current_room.id] = {i: '?' for i in player.current_room.get_exits()}
+
+# movement_history = Stack()
+movement_history = []
+
+
 while len(known_rooms) < len(room_graph):
-    # log current room and exits
-    current_room = player.current_room
-    known_rooms[current_room.id] = {i:'?' for i in current_room.get_exits()}
-    # if all points are known, we'll have to do a BFS, but that comes later
     # Create a list of directions that have an unknown next room
-    unknown_directions = [i for i in known_rooms[current_room.id] if known_rooms[current_room.id][i] == '?']
+    unknown_directions = has_unknown_rooms(player.current_room)
+    # If there are no unknown directions, we need to do a BFS
+    # Create stack as I move/travel
+    # If I get stuck/no exits, move backwards through the stack 
+    # at each room, evaluate whether there are ? exits
+    # then continue
+    
+    # Let's try backtracking instead of BFS initially
+    if len(unknown_directions) == 0:
+        while len(has_unknown_rooms(player.current_room)) == 0:
+            #
+            backtrack = movement_history.pop()
+            traversal_path.append(opposite_direction[backtrack])
+            player.travel(opposite_direction[backtrack])
+            # Update unknown_directions
+            unknown_directions = has_unknown_rooms(player.current_room)
+            
+        # continue
+
+    # Try this later
+    # if len(unknown_directions) == 0:
+    #     # BFS baby
+    #     q = Queue()
+    #     visited = set()
+    #     q.enqueue(player.current_room)
+    #     while q > 0:
+    #         current = q.dequeue()
+    #         # if the current item has rooms == ?, then let's go!
+    #         if has_unknown_rooms(current) > 0:
+    #             return current
+    #         if current not in visited:
+    #             visited.add(current)
+    #         directions = player.current_room.get_exits()
+    #         for direction in directions:
+    #             if direction not in visited:
+    #                 visited[direction] = direction
+    #                 q.enqueue()
+
     # Randomly choose from useful options
     choice = random.choice(unknown_directions)
-    # Add to our traversal path
+    # Add to our traversal and history paths
     traversal_path.append(choice)
+    movement_history.append(choice)
+    # Set previous room
+    prev_room = player.current_room
     # Move the player
     player.travel(choice)
     # add the room to the direction, overwriting the '?'
-    new_room = player.current_room.id
-    known_rooms[current_room.id][choice] = new_room
+    new_room = player.current_room
+    # Update the previous room to update what room we ended up in
+    known_rooms[prev_room.id][choice] = new_room.id
+    # Add new room to graph
+    if player.current_room.id not in known_rooms:
+        known_rooms[player.current_room.id] = {i: '?' for i in player.current_room.get_exits()}
+    # Update new room to represent what room we came from
+    known_rooms[player.current_room.id][opposite_direction[choice]] = prev_room.id
 
 print(known_rooms)
 
